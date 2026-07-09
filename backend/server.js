@@ -13,8 +13,10 @@ import adminRoutes from './routes/admin.js';
 import academicRoutes from './routes/academic.js';
 import teacherRoutes from './routes/teacher.js';
 import studentRoutes from './routes/student.js';
+import { validateEnv } from './config/env.js';
 
 dotenv.config();
+validateEnv();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
