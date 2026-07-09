@@ -68,7 +68,7 @@ export default function StudentsPage() {
             <Card key={idx}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-nie-blue" />
+                  <Users className="h-5 w-5 text-[#0F766E]" />
                   Section {section.name}
                 </CardTitle>
                 <CardDescription>

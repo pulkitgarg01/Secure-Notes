@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import MainLayout from '../layout/MainLayout'
-import { Button } from '../ui/button'
-import { BookOpen, Users, Settings, GraduationCap, Calendar, FolderTree, BookMarked } from 'lucide-react'
+import {
+  LayoutDashboard, Users, GitBranch, Calendar,
+  Layers, BookOpen, UserCog,
+} from 'lucide-react'
 import BranchesPage from './BranchesPage'
 import SemestersPage from './SemestersPage'
 import SectionsPage from './SectionsPage'
@@ -11,57 +13,47 @@ import UsersPage from './UsersPage'
 import SubjectAssignmentsPage from './SubjectAssignmentsPage'
 import DashboardHome from './DashboardHome'
 
-export default function AdminDashboard() {
-  const location = useLocation()
-  
-  const isActive = (path) => location.pathname.startsWith(path)
+function NavItem({ to, icon: Icon, label, exact = false }) {
+  const { pathname } = useLocation()
+  const active = exact ? pathname === to : pathname.startsWith(to)
+  return (
+    <Link to={to} className="block">
+      <div
+        className={[
+          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+          active
+            ? 'bg-[#0F766E] text-white'
+            : 'text-slate-400 hover:text-white hover:bg-white/5',
+        ].join(' ')}
+      >
+        <Icon className="w-4 h-4 shrink-0" />
+        {label}
+      </div>
+    </Link>
+  )
+}
 
+export default function AdminDashboard() {
   return (
     <MainLayout
+      sidebarTitle="Administration"
       sidebar={
-        <nav className="space-y-1">
-          <Link to="/admin">
-            <Button variant={location.pathname === '/admin' ? 'default' : 'ghost'} className="w-full justify-start">
-              <Settings className="mr-2 h-4 w-4" />
-              Dashboard
-            </Button>
-          </Link>
-          <Link to="/admin/users">
-            <Button variant={isActive('/admin/users') ? 'default' : 'ghost'} className="w-full justify-start">
-              <Users className="mr-2 h-4 w-4" />
-              Users
-            </Button>
-          </Link>
-          <Link to="/admin/branches">
-            <Button variant={isActive('/admin/branches') ? 'default' : 'ghost'} className="w-full justify-start">
-              <GraduationCap className="mr-2 h-4 w-4" />
-              Branches
-            </Button>
-          </Link>
-          <Link to="/admin/semesters">
-            <Button variant={isActive('/admin/semesters') ? 'default' : 'ghost'} className="w-full justify-start">
-              <Calendar className="mr-2 h-4 w-4" />
-              Semesters
-            </Button>
-          </Link>
-          <Link to="/admin/sections">
-            <Button variant={isActive('/admin/sections') ? 'default' : 'ghost'} className="w-full justify-start">
-              <FolderTree className="mr-2 h-4 w-4" />
-              Sections
-            </Button>
-          </Link>
-          <Link to="/admin/subjects">
-            <Button variant={isActive('/admin/subjects') ? 'default' : 'ghost'} className="w-full justify-start">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Subjects
-            </Button>
-          </Link>
-          <Link to="/admin/assignments">
-            <Button variant={isActive('/admin/assignments') ? 'default' : 'ghost'} className="w-full justify-start">
-              <BookMarked className="mr-2 h-4 w-4" />
-              Assign Subjects
-            </Button>
-          </Link>
+        <nav className="space-y-0.5">
+          <NavItem to="/admin" exact icon={LayoutDashboard} label="Overview" />
+
+          <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+            Users
+          </p>
+          <NavItem to="/admin/users" icon={Users} label="Manage Users" />
+          <NavItem to="/admin/assignments" icon={UserCog} label="Assign Subjects" />
+
+          <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+            Academic Structure
+          </p>
+          <NavItem to="/admin/branches" icon={GitBranch} label="Branches" />
+          <NavItem to="/admin/semesters" icon={Calendar} label="Semesters" />
+          <NavItem to="/admin/sections" icon={Layers} label="Sections" />
+          <NavItem to="/admin/subjects" icon={BookOpen} label="Subjects" />
         </nav>
       }
     >
