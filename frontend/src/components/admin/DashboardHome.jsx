@@ -25,20 +25,20 @@ export default function DashboardHome() {
   }
 
   const StatCard = ({ title, icon: Icon, value, label, linkTo }) => (
-    <Card className="hover:shadow-card-hover transition-shadow overflow-hidden group">
+    <Card className="hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group border-slate-200 bg-white">
       <div className="h-1 w-full bg-gradient-to-r from-[#0F766E] to-[#34D399]" />
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5">
         <CardTitle className="text-sm font-semibold text-slate-600">{title}</CardTitle>
-        <div className="p-2 bg-slate-50 rounded-md group-hover:bg-[#0F766E]/10 transition-colors">
-          <Icon className="h-4 w-4 text-[#0F766E]" />
+        <div className="p-2 bg-slate-50/50 rounded-md group-hover:bg-[#0F766E]/10 group-hover:text-[#0F766E] transition-colors">
+          <Icon className="h-4 w-4 text-slate-400 group-hover:text-[#0F766E] transition-colors" />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold text-slate-900">{loading ? '—' : value}</div>
-        <p className="text-xs text-slate-500 mt-1 mb-3">{label}</p>
+      <CardContent className="pb-5">
+        <div className="text-3xl font-bold text-slate-900 tracking-tight">{loading ? '—' : value}</div>
+        <p className="text-xs text-slate-500 mt-1 mb-4">{label}</p>
         <Link
           to={linkTo}
-          className="text-xs font-medium text-[#0F766E] hover:text-[#0D6B64] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-xs font-semibold text-[#0F766E] hover:text-[#0D6B64] flex items-center gap-1 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200"
         >
           Manage <ArrowRight className="w-3 h-3" />
         </Link>
@@ -47,7 +47,7 @@ export default function DashboardHome() {
   )
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-5xl">
+    <div className="space-y-6 animate-fade-in max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Administration</h1>
         <p className="text-slate-500 mt-1">Manage users, academic structure, and platform settings.</p>
