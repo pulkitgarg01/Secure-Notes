@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // Bootstrap first admin
 router.post('/bootstrap-admin', async (req, res) => {
@@ -37,7 +36,7 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password || '', user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = jwt.sign({ id: user._id.toString(), role: user.role, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign({ id: user._id.toString(), role: user.role, email: user.email, name: user.name }, process.env.JWT_SECRET, { expiresIn: '8h' });
     return res.json({ token, user: { id: user._id, role: user.role, email: user.email, name: user.name } });
   } catch (e) {
     return res.status(500).json({ error: 'Server error' });

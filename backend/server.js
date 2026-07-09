@@ -1,22 +1,30 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 
-import authRoutes from './routes/auth.js';
-import adminRoutes from './routes/admin.js';
-import academicRoutes from './routes/academic.js';
-import teacherRoutes from './routes/teacher.js';
-import studentRoutes from './routes/student.js';
 import { validateEnv } from './config/env.js';
 
-dotenv.config();
 validateEnv();
+
+const [
+  { default: authRoutes },
+  { default: adminRoutes },
+  { default: academicRoutes },
+  { default: teacherRoutes },
+  { default: studentRoutes },
+] = await Promise.all([
+  import('./routes/auth.js'),
+  import('./routes/admin.js'),
+  import('./routes/academic.js'),
+  import('./routes/teacher.js'),
+  import('./routes/student.js'),
+]);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
