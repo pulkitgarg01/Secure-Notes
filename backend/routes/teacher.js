@@ -13,6 +13,23 @@ import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+/**
+ * Escapes all regex metacharacters in a user-supplied string.
+ * Prevents ReDoS via crafted $regex queries (SEC-08).
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Sanitizes a search query parameter: clamps to 100 chars and escapes regex
+ * metacharacters. Returns null if the input is absent or not a string.
+ */
+function sanitizeSearchQuery(q) {
+  if (!q || typeof q !== 'string') return null;
+  return escapeRegex(q.slice(0, 100));
+}
+
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
 const maxMb = parseInt(process.env.MAX_UPLOAD_MB || '20', 10);
 
@@ -192,12 +209,13 @@ router.post('/notes', uploadLimiter, upload.single('file'), async (req, res) => 
 router.get('/notes', async (req, res) => {
   try {
     const { module_id, subject_id, q } = req.query;
+    const safeQ = sanitizeSearchQuery(q);
     const filter = { teacher_id: req.user.id };
     if (module_id) filter.module_id = module_id;
-    if (q) {
+    if (safeQ) {
       filter.$or = [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { title: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } }
       ];
     }
     
@@ -264,23 +282,24 @@ router.delete('/notes/:id', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.json({ subjects: [], modules: [], notes: [] });
+    const safeQ = sanitizeSearchQuery(q);
+    if (!safeQ) return res.json({ subjects: [], modules: [], notes: [] });
     
     const assignments = await SubjectAssignment.find({ teacher_id: req.user.id });
     const subjectIds = assignments.map(a => a.subject_id.toString());
     
     const [subjects, modules, notes] = await Promise.all([
       Subject.find({ _id: { $in: subjectIds }, $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { code: { $regex: q, $options: 'i' } }
+        { name: { $regex: safeQ, $options: 'i' } },
+        { code: { $regex: safeQ, $options: 'i' } }
       ]}),
       Module.find({ subject_id: { $in: subjectIds }, $or: [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { title: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } }
       ]}).populate('subject_id', 'name code'),
       Note.find({ teacher_id: req.user.id, $or: [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { title: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } }
       ]}).populate('module_id', 'title')
     ]);
     
