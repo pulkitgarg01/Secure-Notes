@@ -11,6 +11,23 @@ import { requireRole } from '../middleware/roleCheck.js';
 
 const router = express.Router();
 
+/**
+ * Escapes all regex metacharacters in a user-supplied string.
+ * Prevents ReDoS via crafted $regex queries (SEC-08).
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Sanitizes a search query parameter: clamps to 100 chars and escapes regex
+ * metacharacters. Returns null if the input is absent or not a string.
+ */
+function sanitizeSearchQuery(q) {
+  if (!q || typeof q !== 'string') return null;
+  return escapeRegex(q.slice(0, 100));
+}
+
 router.use(requireAuth, requireRole('student'));
 
 // Get student's subjects (based on B-S-S)
@@ -218,15 +235,16 @@ router.get('/notes/recent', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.json({ subjects: [], modules: [], notes: [] });
+    const safeQ = sanitizeSearchQuery(q);
+    if (!safeQ) return res.json({ subjects: [], modules: [], notes: [] });
     
     const student = await User.findById(req.user.id);
     const subjects = await Subject.find({
       branch_id: student.branch_id,
       semester_id: student.semester_id,
       $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { code: { $regex: q, $options: 'i' } }
+        { name: { $regex: safeQ, $options: 'i' } },
+        { code: { $regex: safeQ, $options: 'i' } }
       ]
     });
     const subjectIds = subjects.map(s => s._id);
@@ -234,8 +252,8 @@ router.get('/search', async (req, res) => {
     const modules = await Module.find({
       subject_id: { $in: subjectIds },
       $or: [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { title: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } }
       ]
     }).populate('subject_id', 'name code');
     
@@ -243,8 +261,8 @@ router.get('/search', async (req, res) => {
     const notes = await Note.find({
       module_id: { $in: moduleIds },
       $or: [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { title: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } }
       ]
     }).populate('module_id', 'title').populate('teacher_id', 'name email');
     
