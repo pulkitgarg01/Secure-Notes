@@ -1,9 +1,22 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 
 const router = express.Router();
+
+// Strict per-IP rate limiter for login — 5 attempts per 15 minutes.
+// Layered on top of the global 100 req/15 min limiter on /api/*.
+// Returns standard RateLimit-* headers (RFC 6585) and a clear error body.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { error: 'Too many login attempts from this IP. Please try again in 15 minutes.' },
+  standardHeaders: true,  // Return RateLimit-* headers
+  legacyHeaders: false,   // Suppress X-RateLimit-* headers
+  skipSuccessfulRequests: false, // Count all attempts (not just failures)
+});
 
 // Bootstrap first admin
 router.post('/bootstrap-admin', async (req, res) => {
@@ -29,7 +42,7 @@ router.post('/bootstrap-admin', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: (email || '').toLowerCase() });
