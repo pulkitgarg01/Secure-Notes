@@ -1,80 +1,154 @@
-# Secure Notes Platform (MVP)
+# Secure Notes
 
-Minimal web app for secure sharing of educational PDF notes between teachers and students with emphasis on a custom PDF viewer, watermarking, and access control.
+**Access-controlled academic content delivery with view-only PDF distribution, identity watermarking, and progress analytics.**
+
+A full-stack portfolio project demonstrating role-based access control, secure file streaming, and a production-oriented security posture in a Node.js + React application.
+
+---
+
+## Features
+
+| Feature | Details |
+|---------|---------|
+| **Role-based access** | Three roles: Admin, Teacher, Student with separate dashboards and API scopes |
+| **Academic hierarchy** | Branch → Semester → Section → Subject → Module → Note |
+| **Secure PDF streaming** | PDFs served through authenticated routes — no direct file URLs |
+| **Identity watermark** | Student name and timestamp overlaid on every PDF page |
+| **Access scope enforcement** | Teachers scoped to assigned subjects; students scoped to branch+semester |
+| **Progress tracking** | Per-student view and completion tracking on each note |
+| **Rate-limited login** | 5 attempts / 15 min / IP on the login endpoint |
+| **Admin user management** | Admin-only user creation, editing, role assignment |
+
+---
 
 ## Tech Stack
-- Backend: Node.js, Express, MongoDB (Mongoose), JWT, Multer, Bcrypt
-- Frontend: React (Vite), PDF.js (CDN)
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite 5, Tailwind CSS 3 |
+| Backend | Node.js 18+, Express 4 |
+| Database | MongoDB 7+ (Mongoose 8) |
+| Auth | JWT (HS256, 8h expiry) + bcryptjs |
+| PDF Viewer | PDF.js (pdfjs-dist 4.x) |
+| File Upload | Multer 2.x |
+| Security | Helmet, express-rate-limit, regex escaping |
+
+---
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 18+
-- MongoDB (local or Atlas)
+**Requirements:** Node.js 18+, MongoDB 7+ running locally
 
-### Backend
 ```bash
-cd backend
-npm install
-# create .env based on .env.example
+# 1. Clone & install
+git clone <repo-url> && cd secure-notes
+npm install && npm run install:all
+
+# 2. Configure backend
+cp backend/.env.example backend/.env
+# Edit backend/.env — set JWT_SECRET and BOOTSTRAP_TOKEN
+
+# 3. Run
 npm run dev
 ```
 
-### Frontend
+- Backend: `http://localhost:4000`
+- Frontend: `http://localhost:5173`
+
+### First Admin Setup
+
 ```bash
-cd frontend
-npm install
-npm run dev
+curl -X POST http://localhost:4000/api/auth/bootstrap-admin \
+  -H "Content-Type: application/json" \
+  -H "X-Bootstrap-Token: <your-BOOTSTRAP_TOKEN-value>" \
+  -d '{"email": "admin@example.com", "password": "YourStrongPassword!", "name": "Admin"}'
 ```
 
-Open the frontend dev server URL (usually http://localhost:5173). The frontend expects backend at http://localhost:4000 by default.
+> The endpoint is disabled after the first user exists.
 
-## Environment Variables (backend/.env)
+---
+
+## Environment Variables
+
+See [`backend/.env.example`](./backend/.env.example) for the full reference. Key variables:
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `JWT_SECRET` | **Yes** | Min 32 characters — server exits on startup if absent or too short |
+| `BOOTSTRAP_TOKEN` | Yes (first run) | Random secret required for initial admin creation |
+| `MONGO_URI` | No | Defaults to `mongodb://127.0.0.1:27017/secure_notes` |
+
+Generate a secure secret:
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
-PORT=4000
-MONGO_URI=mongodb://127.0.0.1:27017/secure_notes
-JWT_SECRET=please-change-me
-UPLOAD_DIR=uploads
-CORS_ORIGIN=http://localhost:5173
-MAX_UPLOAD_MB=20
+
+---
+
+## Project Structure
+
+```
+secure-notes/
+├── backend/
+│   ├── config/         # Env validation (env.js)
+│   ├── middleware/     # requireAuth, requireRole
+│   ├── models/         # Mongoose models
+│   ├── routes/         # auth, admin, academic, teacher, student
+│   └── server.js       # Entry point
+├── frontend/
+│   └── src/
+│       ├── components/ # admin/, teacher/, student/, shared/
+│       ├── contexts/   # AuthContext
+│       └── lib/        # api.js (centralized HTTP client)
+└── docs/
+    ├── ARCHITECTURE.md
+    ├── SECURITY.md
+    ├── DEPLOYMENT.md
+    └── INTERVIEW_GUIDE.md
 ```
 
-## Initial Admin User
-On first run, if no users exist, the backend exposes a bootstrap route:
-- POST /api/auth/bootstrap-admin { email, password, name }
+---
 
-Call it once to create the first Admin, then disable/remove it for production.
+## Security Model
 
-## Security Notes
-- PDFs are served only via authenticated endpoints; no direct file URLs are exposed.
-- Custom viewer disables right-click, print, save shortcuts; adds dynamic watermark.
-- Absolute prevention of client-side saving/screenshotting is not possible; users can still capture screen images. This app focuses on deterrence and traceability.
+PDF access is **deterrence-layer security**: authenticated streaming, no direct file URLs, identity watermarking, and input sanitization. It is not cryptographic DRM.
 
-## Scripts
-Backend:
-- npm run dev – start with nodemon
-- npm start – production start
+Key controls:
+- JWT secret validated at startup (≥ 32 chars required)
+- No public registration endpoint — users created only by authenticated admins
+- Bootstrap endpoint token-gated and auto-disabled after first admin
+- Login rate-limited (5 req/15 min/IP)
+- `$regex` search queries escaped to prevent ReDoS
+- PDF upload validated by MIME type, capped at 20 MB
 
-Frontend:
-- npm run dev – Vite dev server
-- npm run build – production build
-- npm run preview – preview build
+**Known limitations are documented in [`docs/SECURITY.md`](./docs/SECURITY.md)** — including JWT storage trade-offs and the limits of client-side PDF protection.
 
-## Folder Structure
-See repository tree for details. Key files:
-- backend/server.js – Express app
-- frontend/src/components/SecurePDFViewer.jsx – PDF.js viewer with watermark and protections
+---
 
-## Testing Checklist
-- Verify auth and role-based access
-- Teacher upload validations (PDF only)
-- Student can view assigned notes only
-- Watermark shows student name/email/timestamp
-- Attempt print/save shortcuts – should be blocked by UI
-- Try direct file URL access – should be impossible; 401/403
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System design, data model, request flows |
+| [`docs/SECURITY.md`](./docs/SECURITY.md) | Security controls, limitations, and interview talking points |
+| [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Local setup, production targets (Vercel + Railway + Atlas) |
+| [`docs/INTERVIEW_GUIDE.md`](./docs/INTERVIEW_GUIDE.md) | Demo flow, anticipated questions, retrospective |
+
+---
+
+## Available Scripts
+
+From the **repo root**:
+
+| Command | Action |
+|---------|--------|
+| `npm run dev` | Start backend + frontend concurrently |
+| `npm run install:all` | Install backend + frontend dependencies |
+| `npm run build` | Build frontend production bundle |
+| `npm run start` | Start backend in production mode |
+
+---
 
 ## License
-MVP for educational use.
 
-
-
+MIT
