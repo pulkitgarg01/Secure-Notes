@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
 import Note from '../models/Note.js';
@@ -65,8 +66,37 @@ router.put('/users/:id', async (req, res) => {
 });
 
 router.post('/users', async (req, res) => {
-  // Admin should use /api/auth/register for hashed password creation in this MVP
-  return res.status(405).json({ error: 'Use /api/auth/register' });
+  try {
+    const { email, password, role, name, branch_id, semester_id, section_id } = req.body;
+    if (!email || !password || !role || !name) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+    if (!['admin', 'teacher', 'student'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    const exists = await User.findOne({ email: email.toLowerCase() });
+    if (exists) return res.status(409).json({ error: 'Email already used' });
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      email: email.toLowerCase(),
+      password: hash,
+      role,
+      name,
+      branch_id: branch_id || null,
+      semester_id: semester_id || null,
+      section_id: section_id || null,
+    });
+
+    const created = await User.findById(user._id)
+      .select('-password')
+      .populate('branch_id', 'name code')
+      .populate('semester_id', 'number')
+      .populate('section_id', 'name');
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 router.delete('/users/:id', async (req, res) => {

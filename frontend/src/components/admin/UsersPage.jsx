@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
-import { admin, academic, auth } from '../../lib/api'
+import { admin, academic } from '../../lib/api'
 import { toast } from 'sonner'
 
 export default function UsersPage() {
@@ -50,7 +50,7 @@ export default function UsersPage() {
         await admin.users.update(editing._id, formData)
         toast.success('User updated')
       } else {
-        await auth.register(formData)
+        await admin.users.create(formData)
         toast.success('User created')
       }
       setShowForm(false)

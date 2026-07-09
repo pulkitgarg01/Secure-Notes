@@ -45,10 +45,6 @@ export const auth = {
     method: 'POST',
     body: JSON.stringify({ email, password })
   }),
-  register: (data) => apiRequest('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
 }
 
 // Admin - Academic Structure
@@ -117,6 +113,10 @@ export const admin = {
       const query = new URLSearchParams(params).toString()
       return apiRequest(`/admin/users${query ? `?${query}` : ''}`)
     },
+    create: (data) => apiRequest('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     update: (id, data) => apiRequest(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
