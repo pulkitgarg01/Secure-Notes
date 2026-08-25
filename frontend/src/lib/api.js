@@ -39,6 +39,37 @@ export async function apiRequest(endpoint, options = {}) {
   }
 }
 
+export async function apiFetchFile(endpoint) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`
+  const token = localStorage.getItem('token')
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+  
+  const res = await fetch(url, { headers })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch file: ${res.status}`)
+  }
+  
+  return res.blob()
+}
+
+export async function downloadSecureFile(url, filename) {
+  const blob = await apiFetchFile(url)
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
+export async function viewSecureFile(url, mimeType = 'application/pdf') {
+  const blob = await apiFetchFile(url)
+  const objectUrl = URL.createObjectURL(new Blob([blob], { type: blob.type || mimeType }))
+  window.open(objectUrl, '_blank')
+}
+
 // Auth
 export const auth = {
   login: (email, password) => apiRequest('/auth/login', {
@@ -138,12 +169,18 @@ export const admin = {
       method: 'DELETE'
     }),
   },
+  notes: {
+    list: () => apiRequest('/admin/notes'),
+    delete: (id) => apiRequest(`/admin/notes/${id}`, { method: 'DELETE' })
+  }
 }
 
 // Teacher
 export const teacher = {
+  stats: () => apiRequest('/teacher/stats'),
   subjects: () => apiRequest('/teacher/subjects'),
   students: () => apiRequest('/teacher/students'),
+  analytics: () => apiRequest('/teacher/analytics'),
   modules: {
     list: (params) => {
       const query = new URLSearchParams(params).toString()
@@ -160,6 +197,26 @@ export const teacher = {
     delete: (id) => apiRequest(`/teacher/modules/${id}`, {
       method: 'DELETE'
     }),
+  },
+  tasks: {
+    list: (params) => {
+      const query = new URLSearchParams(params).toString()
+      return apiRequest(`/teacher/tasks${query ? `?${query}` : ''}`)
+    },
+    create: (data) => apiRequest('/teacher/tasks', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    update: (id, data) => apiRequest(`/teacher/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+    delete: (id) => apiRequest(`/teacher/tasks/${id}`, {
+      method: 'DELETE'
+    }),
+    getSubmissions: (id) => apiRequest(`/teacher/tasks/${id}/submissions`),
+    downloadSubmissionUrl: (id) => `${API_BASE}/teacher/tasks/submissions/${id}/download`,
+    viewSubmissionUrl: (id) => `${API_BASE}/teacher/tasks/submissions/${id}/view`
   },
   notes: {
     list: (params) => {
@@ -200,9 +257,22 @@ export const teacher = {
 
 // Student
 export const student = {
+  stats: () => apiRequest('/student/stats'),
   subjects: () => apiRequest('/student/subjects'),
   modules: (subjectId) => apiRequest(`/student/subjects/${subjectId}/modules`),
   notes: (moduleId) => apiRequest(`/student/modules/${moduleId}/notes`),
+  tasks: {
+    list: () => apiRequest('/student/tasks'),
+    submit: (id, formData) => {
+      const token = localStorage.getItem('token')
+      return fetch(`${API_BASE}/student/tasks/${id}/submit`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+        body: formData
+      }).then(res => res.json().then(data => { if (!res.ok) throw new Error(data.error || 'Submission failed'); return data; }))
+    },
+    getSubmissions: (id) => apiRequest(`/student/tasks/${id}/submissions`)
+  },
   viewNote: (noteId) => {
     return `${API_BASE}/student/notes/${noteId}/view`
   },
@@ -211,7 +281,43 @@ export const student = {
     body: JSON.stringify({ completed })
   }),
   progress: () => apiRequest('/student/progress'),
+  recommended: () => apiRequest('/student/notes/recommended'),
   recent: (limit = 10) => apiRequest(`/student/notes/recent?limit=${limit}`),
   search: (q) => apiRequest(`/student/search?q=${encodeURIComponent(q)}`),
 }
 
+// Communication (All roles)
+export const communication = {
+  searchUsers: (q) => apiRequest(`/communication/search-users?q=${encodeURIComponent(q)}`),
+  conversations: {
+    list: () => apiRequest('/communication/conversations'),
+    create: (data) => apiRequest('/communication/conversations', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    messages: (id) => apiRequest(`/communication/conversations/${id}/messages`),
+    reply: (id, body) => apiRequest(`/communication/conversations/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ body })
+    }),
+    markRead: (id) => apiRequest(`/communication/conversations/${id}/read`, {
+      method: 'POST'
+    })
+  },
+  announcements: {
+    list: () => apiRequest('/communication/announcements'),
+    create: (data) => apiRequest('/communication/announcements', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+  notifications: {
+    list: () => apiRequest('/communication/notifications'),
+    markRead: (id) => apiRequest(`/communication/notifications/${id}/read`, {
+      method: 'POST'
+    }),
+    markAllRead: () => apiRequest('/communication/notifications/read-all', {
+      method: 'POST'
+    })
+  }
+}

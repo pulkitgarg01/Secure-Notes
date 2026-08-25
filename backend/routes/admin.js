@@ -3,7 +3,12 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Assignment from '../models/Assignment.js';
 import Note from '../models/Note.js';
+import Module from '../models/Module.js';
+import StorageService from '../services/StorageService.js';
 import SubjectAssignment from '../models/SubjectAssignment.js';
+import Subject from '../models/Subject.js';
+import Activity from '../models/Activity.js';
+import WatermarkService from '../services/WatermarkService.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleCheck.js';
 
@@ -13,12 +18,94 @@ router.use(requireAuth, requireRole('admin'));
 
 // Stats
 router.get('/stats', async (_req, res) => {
-  const [teachers, students, notes] = await Promise.all([
-    User.countDocuments({ role: 'teacher' }),
-    User.countDocuments({ role: 'student' }),
+  const [teachers, students, notes, recentUsers, recentSubjects, recentActivities, publishedNotes, draftNotes, totalSubjects] = await Promise.all([
+    User.countDocuments({ role: 'teacher', status: 'active' }),
+    User.countDocuments({ role: 'student', status: 'active' }),
     Note.countDocuments(),
+    User.find({ role: 'teacher' }, '-password').sort({ _id: -1 }).limit(5),
+    Subject.find().sort({ _id: -1 }).limit(5),
+    Activity.find().sort({ created_at: -1 }).limit(15),
+    Note.countDocuments({ status: 'published' }),
+    Note.countDocuments({ status: 'draft' }),
+    Subject.countDocuments()
   ]);
-  res.json({ teachers, students, notes });
+  res.json({ teachers, students, notes, recentFaculty: recentUsers, recentSubjects, recentActivities, publishedNotes, draftNotes, totalSubjects });
+});
+
+// All Files (Notes)
+router.get('/notes', async (req, res) => {
+  try {
+    const notes = await Note.find()
+      .populate('teacher_id', 'name email')
+      .populate({
+        path: 'module_id',
+        select: 'title subject_id',
+        populate: {
+          path: 'subject_id',
+          select: 'name code'
+        }
+      })
+      .sort({ uploaded_at: -1 })
+      .limit(500);
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/notes/:id', async (req, res) => {
+  try {
+    const note = await Note.findById(req.params.id);
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+    if (note.file_path) {
+      await StorageService.deleteFile(note.file_path).catch(() => {});
+    }
+    await Note.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/notes/:id/view', async (req, res) => {
+  try {
+    const note = await Note.findById(req.params.id);
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+    
+    const exists = await StorageService.fileExists(note.file_path);
+    if (!note.file_path || !exists) return res.status(404).json({ error: 'File not found' });
+    
+    const adminUser = await User.findById(req.user.id);
+    const pdfBuffer = await StorageService.getFileBuffer(note.file_path);
+    const watermarkedBuffer = await WatermarkService.applyWatermark(pdfBuffer, adminUser, { name: note.title });
+
+    await Activity.create({
+      actor_id: adminUser._id,
+      actor_name: adminUser.name,
+      action: 'watermark_generated',
+      target_name: note.title,
+      target_type: 'Note',
+      metadata: {
+        userId: adminUser._id,
+        resourceId: note._id,
+        watermarkGeneratedAt: new Date(),
+        accessTimestamp: new Date(),
+      }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${note.title}.pdf"`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Content-Length', watermarkedBuffer.length);
+    
+    res.end(watermarkedBuffer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Users CRUD (with academic structure)

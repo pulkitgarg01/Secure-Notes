@@ -11,12 +11,20 @@ export default {
         sans: ["'Plus Jakarta Sans'", "system-ui", "-apple-system", "sans-serif"],
       },
       colors: {
-        /* Acadence brand tokens — replaces nie.* */
+        /* Acadence brand tokens */
         brand: {
           primary:  '#0F766E',  /* teal-700 */
           secondary:'#10B981',  /* emerald-500 */
           accent:   '#34D399',  /* emerald-400 */
-          dark:     '#0F172A',  /* slate-900 — sidebar */
+          dark:     '#0F172A',  /* slate-900 */
+        },
+        surface: {
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          800: '#1E293B',
+          900: '#0F172A',
+          950: '#020617',
         },
         /* shadcn-style semantic tokens backed by CSS vars */
         border:     "hsl(var(--border))",
@@ -62,6 +70,14 @@ export default {
         card: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)",
         'card-hover': "0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)",
       },
+      keyframes: {
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        }
+      },
+      animation: {
+        shimmer: 'shimmer 1.5s infinite',
+      }
     },
   },
   plugins: [],
