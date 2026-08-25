@@ -9,7 +9,7 @@ const NoteSchema = new mongoose.Schema({
   file_size: { type: Number, default: 0 }, // in bytes
   order: { type: Number, default: 0 },
   status: { type: String, enum: ['published', 'draft', 'archived'], default: 'draft' },
-  resource_type: { type: String, enum: ['pdf', 'document', 'guide'], default: 'document' },
+  resource_type: { type: String, enum: ['pdf', 'document', 'guide', 'assignment'], default: 'document' },
   version: { type: String, default: 'v1.0' },
   views: { type: Number, default: 0 },
   downloads: { type: Number, default: 0 },

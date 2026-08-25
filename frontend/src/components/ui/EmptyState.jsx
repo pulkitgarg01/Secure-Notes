@@ -12,8 +12,8 @@ export default function EmptyState({
 }) {
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
-      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl"
     >

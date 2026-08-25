@@ -29,8 +29,8 @@ export const containerVariants = {
 }
 
 export const itemVariants = {
-  hidden: { opacity: 0, y: 20, filter: 'blur(2px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.2, ease: smoothEase } }
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: smoothEase } }
 }
 
 export function PageContainer({ children, className = '' }) {
