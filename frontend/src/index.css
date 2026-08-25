@@ -8,7 +8,7 @@
     --brand-primary:   221 83% 53%;    /* #2563EB → overridden below */
 
     /* Semantic design tokens */
-    --background:        210 40% 98%;   /* #F8FAFC slate-50 */
+    --background:        214 32% 91%;   /* #E2E8F0 slate-200 (professional gray) */
     --foreground:        222 47% 7%;    /* #0F172A slate-900 */
 
     --card:              0 0% 100%;
@@ -84,7 +84,11 @@
   button, a, [role="button"] {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+    transition-duration: 200ms;
+  }
+  
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
   }
 }
 

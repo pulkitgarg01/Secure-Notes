@@ -37,3 +37,12 @@ logs/
 *.temp
 
 
+
+# Local credentials / agent files
+login.json
+token.txt
+.agents/
+
+# Local authentication artifacts
+login.json
+token.txt

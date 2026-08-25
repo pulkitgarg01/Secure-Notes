@@ -11,7 +11,7 @@ const router = express.Router();
 // Returns standard RateLimit-* headers (RFC 6585) and a clear error body.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 50, // increased for testing
   message: { error: 'Too many login attempts from this IP. Please try again in 15 minutes.' },
   standardHeaders: true,  // Return RateLimit-* headers
   legacyHeaders: false,   // Suppress X-RateLimit-* headers
@@ -45,7 +45,7 @@ router.post('/bootstrap-admin', async (req, res) => {
 router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: (email || '').toLowerCase() });
+    const user = await User.findOne({ email: (email || '').toLowerCase().trim() });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password || '', user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });

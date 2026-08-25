@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { Toaster } from 'sonner'
 import ErrorBoundary from './components/ErrorBoundary'
 import Login from './components/Login.jsx'
@@ -72,12 +73,27 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <Toaster position="top-right" />
-        </BrowserRouter>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <Toaster 
+              position="bottom-right" 
+              toastOptions={{
+                className: 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 text-slate-900 dark:text-slate-50 shadow-2xl rounded-xl px-4 py-3',
+                descriptionClassName: 'text-slate-500 dark:text-slate-400 text-sm font-medium',
+                actionButton: {
+                  style: {
+                    background: '#0F766E',
+                    color: 'white',
+                    borderRadius: '6px',
+                  }
+                }
+              }}
+            />
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }
